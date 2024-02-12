@@ -727,7 +727,7 @@ vl1:    lda   rowL,x         ; Get the row address
 
 	ldx #0            ;引き算した回数(X)を0クリア
 	stx loop_cnt	  ;ASCIIスコア文字列の桁数オフセットを0クリア
-	ldy #0		  ;スコアの桁数インデックス初期値(15)を設定
+	ldy #0		  ;スコアの割る数テーブル(3 x 6 = 18バイト 0〜17)のインデックス初期値を設定
 set_diver:
 	;; 100000 $186a0
 	; 割る数の初期値をセット(リトルエディアン）
@@ -763,23 +763,24 @@ compare:
 	lda bin_score+2
 	sbc score_tmp+2
 	sta bin_score+2
-	
-	inx              ;割った数+1
+
+	inc loop_cnt       ;割った数+1
+
 	jmp compare      ;繰り返す
 exit_loop:
-	txa                ;割った数をAにセット
-	ldx loop_cnt
+	lda loop_cnt       ;割った数をAにセット
 	clc		   ;足し算するのでキャリーフラグをクリア
 	adc #$30           ;ASCII'0'($30)+カウンタ
 	sta asc_score,x	   ;asc_score+xにASCII文字を格納
-	inx                ;ループカウント+1
-	stx loop_cnt       ;ループカウンタ値を保存
-	ldx #0		   ;Xレジスタ(割った数)を0で初期化
+	inx                ;ASCII桁数(X)+1
+	lda #0		   ;割った数を0クリア
+	sta loop_cnt	   ;格納
 
-	cpy #18            ;すべての桁を計算した?
+;	cpy #18            ;すべての桁を計算した?(Y == 18?)
+	cpx #6             ;すべての桁を計算した?(Y == 18?)
 	bne set_diver	   ;していない場合は、引き算を繰り返す
 
-	pla
+	pla                ;スタックに退避していたバイナリスコアを復元
 	sta bin_score+2
 	pla
 	sta bin_score+1
@@ -795,7 +796,7 @@ exit_loop:
 .proc add_score
 	lda bin_score
 	clc
-	adc #10	;得点+10
+	adc #100	;得点+10
 	sta bin_score
 	lda bin_score+1
 	adc #0
