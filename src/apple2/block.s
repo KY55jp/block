@@ -742,16 +742,23 @@ set_diver:
 	iny
 compare:	
 	;割られる数と割る数の大小比較比較
-	lda bin_score+2  ; 最上位バイトをロード
-	cmp score_tmp+2  ; 割る数と大小比較
-	bcc exit_loop	 ; 割られる数字 < 割る数字 の場合はループを抜ける
+	lda bin_score+2  ; 割る数-割られる数の大小比較
+	cmp score_tmp+2  ; 割る数の最上位バイトをロード
+	beq :+
+	bcc exit_loop
+	bcs substruct    ; score_tmp+2(割る数) < bin_score+2(割られる数) の場合、次の桁を比較
+:	
 	lda bin_score+1
 	cmp score_tmp+1
+	beq :+
 	bcc exit_loop
+	bcs substruct
+:	
 	lda bin_score
 	cmp score_tmp
-	bcc exit_loop
-
+	bcs substruct
+	jmp exit_loop
+substruct:
 	;引き算実行
 	sec              ; 引き算するためキャリーフラグをセット
 	lda bin_score    ; 割られる数をロード
@@ -796,10 +803,10 @@ exit_loop:
 .proc add_score
 	lda bin_score
 	clc
-	adc #100	;得点+10
+	adc #255	;得点+10
 	sta bin_score
 	lda bin_score+1
-	adc #0
+	adc #1
 	sta bin_score+1
 	lda bin_score+2
 	adc #0
