@@ -803,7 +803,7 @@ exit_loop:
 .proc add_score
 	lda bin_score
 	clc
-	adc #255	;得点+10
+	adc #10			;得点+10
 	sta bin_score
 	lda bin_score+1
 	adc #1
