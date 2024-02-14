@@ -36,14 +36,13 @@ rpos_y:      .res 1 ;ラケットのY座標 固定値
 bpos_x1:     .res 2 ;ボールのX座標1(VRAMアドレス 0〜39)（表示/消去用の２バイト）	
 bpos_x2:     .res 2 ;ボールのX座標2(VRAMアドレス内の位置 0〜3)（表示/消去用の２バイト）
 bpos_y:      .res 2 ;ボールのY座標（表示/消去用の２バイト）
-
+	
 b_vx:        .res 1 ;ボールのX座標ベクトル(-2〜2)
 b_vy:        .res 1 ;ボールのY座標ベクトル(-2〜2)
 game_state:  .res 1 ;ゲームの状態(0:スタート 1:通常プレイ 2:ミス 3:ゲームオーバー)
 ball_wait:   .res 1 ;ボール移動時のウェイト 数字が大きいほど遅くなる
 rkt_wait:    .res 1 ;ラケット移動時のウェイト 数字が大きいほど遅くなる
 bin_score:   .res 3 ;スコア(バイナリ　リトルエディアン)
-score_tmp:   .res 3 ;スコア計算用一時領域(BIN -> ASCII)
 ball_left:   .res 1 ;残りボール数(初期値は3)
 seed:        .res 2 ; initialize 16-bit seed to any value except 0(乱数の種)
 r_color:     .res 1 ;ラケットの描写色 0:ノーマル 1:リバース
@@ -728,47 +727,35 @@ vl1:    lda   rowL,x         ; Get the row address
 	ldx #0            ;引き算した回数(X)を0クリア
 	stx loop_cnt	  ;ASCIIスコア文字列の桁数オフセットを0クリア
 	ldy #0		  ;スコアの割る数テーブル(3 x 6 = 18バイト 0〜17)のインデックス初期値を設定
-set_diver:
-	;; 100000 $186a0
-	; 割る数の初期値をセット(リトルエディアン）
-	lda asc_tbl, y
-	sta score_tmp
-	iny
-	lda asc_tbl, y
-	sta score_tmp+1
-	iny
-	lda asc_tbl, y
-	sta score_tmp+2
-	iny
 compare:	
 	;割られる数と割る数の大小比較比較
 	lda bin_score+2  ; 割る数-割られる数の大小比較
-	cmp score_tmp+2  ; 割る数の最上位バイトをロード
-	beq :+
-	bcc exit_loop
-	bcs substruct    ; score_tmp+2(割る数) < bin_score+2(割られる数) の場合、次の桁を比較
+	cmp asc_tbl+2,y  ; 割る数の最上位バイトをロード
+	beq :+		 ; 同値であれば、次の桁をチェック
+	bcc exit_loop	 ; 割られる数 < 割る数 であれば、比較終了
+	bcs substruct    ; 割られる数 > 割る数 であれば、即時引き算実行
 :	
 	lda bin_score+1
-	cmp score_tmp+1
+	cmp asc_tbl+1,y
 	beq :+
 	bcc exit_loop
 	bcs substruct
 :	
 	lda bin_score
-	cmp score_tmp
+	cmp asc_tbl,y
 	bcs substruct
 	jmp exit_loop
 substruct:
 	;引き算実行
 	sec              ; 引き算するためキャリーフラグをセット
 	lda bin_score    ; 割られる数をロード
-	sbc score_tmp    ; 割る数で引き算
+	sbc asc_tbl,y    ; 割る数で引き算
 	sta bin_score	 ; 引いた数をメモリにストア
 	lda bin_score+1	 ; 以降、２バイト分続ける
-	sbc score_tmp+1
+	sbc asc_tbl+1,y
 	sta bin_score+1
 	lda bin_score+2
-	sbc score_tmp+2
+	sbc asc_tbl+2,y
 	sta bin_score+2
 
 	inc loop_cnt       ;割った数+1
@@ -783,9 +770,13 @@ exit_loop:
 	lda #0		   ;割った数を0クリア
 	sta loop_cnt	   ;格納
 
-;	cpy #18            ;すべての桁を計算した?(Y == 18?)
-	cpx #6             ;すべての桁を計算した?(Y == 18?)
-	bne set_diver	   ;していない場合は、引き算を繰り返す
+	tya			;Y->A
+	clc
+	adc #3			;A=A+3(割る値のビット長)
+	tay			;A->Y
+
+	cpx #6             ;すべての桁を計算した?(X == 6?)
+	bne compare	   ;していない場合は、引き算を繰り返す
 
 	pla                ;スタックに退避していたバイナリスコアを復元
 	sta bin_score+2
@@ -1289,7 +1280,7 @@ reverse:
 	jsr score_bin2ascii     ;スコアのbin->ascii変換
 	jsr draw_score		;スコア表示
 	jsr playBeep            ;beep音を鳴らす
-:
+
 	rts
 .endproc
 
@@ -1473,37 +1464,18 @@ done:
 	rts
 .endproc
 
-;***********************************************
-; binary -> ascii hex convert
-;***********************************************
-.proc toHex
-    ldx #0                                      ; offset into the szHex buffer
-    pha                                         ; save a for lower 4 bits
-    lsr                                         ; move upper 4 bits to lo
-    lsr
-    lsr
-    lsr
-    jsr :+                                      ; process upper 4 bits
-    pla                                         ; restore a to process lower 4 bits
-:
-    and #$0f                                    ; mask to only the 4 bits now in lo
-    cmp #10                                     ; see if it's > 9
-    bcc :+
-    adc #6                                      ; move from 10+ to a+
-:
-    adc #$30                                    ; and move to '0' and beyond
-    sta szHex, x                                ; save this in the buffer
-    inx                                         ; go to next buffer location
-    rts                                         ; and return to self or caller
-
-.endproc
-
 ; データセグメント
 .segment "DATA"
 asc_score: .asciiz "000000"                     ;スコア(ascii)
 asc_left:  .asciiz "0"				;残りのボール数(ascii)
 
 dmz1:	.asciiz "xxxxxxx"                       ;debug用。この領域が壊れてるかどうか
+
+	; $xy 0 : 消滅 1～15配置座標 x:X座標 y:Y座標
+b_data:	
+	.byte $11,$21,$31,$41,$51,$61,$71
+	.byte $12,$22,$32,$42,$52,$62,$72
+	.byte $13,$23,$33,$43,$53,$63,$73
 	
 ; 読み取り専用データセグメント
 .segment "RODATA"
@@ -1517,11 +1489,10 @@ rowH:
 	.byte   >$0000 | Row & $07 << 2 | Row & $30 >> 4
 .endrep
 
-
 ;テキスト描写データ
 game_title: .asciiz "B L O C K"
 hit_anykey: .asciiz "HIT ANY KEY"
-CP: .asciiz "(C) 2023 KOUJI55@GMAIL.COM"
+CP: .asciiz "(C) 2023-24 KOUJI55@GMAIL.COM"
 
 score: .asciiz "SCORE"
 hi_score: .asciiz "HSCORE"
@@ -1716,12 +1687,12 @@ pat4:  ;色付きパターン(偶数) ハーフビットシフトバージョン
 .byte $d0,$aa,$d5,$aa,$d5,$aa
 .byte $00,$aa,$d5,$aa,$d5,$8a
 
-;pat3:  ;白色パターン
-;.byte $00,$ff,$ff,$ff,$ff,$00
-;.byte $f0,$ff,$ff,$ff,$ff,$0f
-;.byte $f0,$ff,$ff,$ff,$ff,$0f
-;.byte $f0,$ff,$ff,$ff,$ff,$0f
-;.byte $f0,$ff,$ff,$ff,$ff,$0f
-;.byte $f0,$ff,$ff,$ff,$ff,$0f
-;.byte $f0,$ff,$ff,$ff,$ff,$0f
-;.byte $00,$ff,$ff,$ff,$ff,$00
+block1:
+	.byte $00,$00
+	.byte $fd,$df
+	.byte $fd,$df
+	.byte $fd,$df
+	.byte $fd,$df
+	.byte $fd,$df
+	.byte $fd,$df
+	.byte $fd,$df
