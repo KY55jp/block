@@ -36,12 +36,14 @@ rpos_y:      .res 1 ;ラケットのY座標 固定値
 bpos_x1:     .res 2 ;ボールのX座標1(VRAMアドレス 0〜39)（表示/消去用の２バイト）	
 bpos_x2:     .res 2 ;ボールのX座標2(VRAMアドレス内の位置 0〜3)（表示/消去用の２バイト）
 bpos_y:      .res 2 ;ボールのY座標（表示/消去用の２バイト）
-	
 b_vx:        .res 1 ;ボールのX座標ベクトル(-2〜2)
 b_vy:        .res 1 ;ボールのY座標ベクトル(-2〜2)
 game_state:  .res 1 ;ゲームの状態(0:スタート 1:通常プレイ 2:ミス 3:ゲームオーバー)
 ball_wait:   .res 1 ;ボール移動時のウェイト 数字が大きいほど遅くなる
 rkt_wait:    .res 1 ;ラケット移動時のウェイト 数字が大きいほど遅くなる
+bw_init:     .res 1 ;ボールウェイトの初期値
+rw_init:     .res 1 ;ラケットウェイトの初期値
+
 bin_score:   .res 3 ;スコア(バイナリ　リトルエディアン)
 ball_left:   .res 1 ;残りボール数(初期値は3)
 seed:        .res 2 ; initialize 16-bit seed to any value except 0(乱数の種)
@@ -60,12 +62,13 @@ MON_BELL   = $FBE4
 KEYIN      = $FD1B
 MON_WAIT   = $FCA8	
 
-; ゲームパラメタ値
+; アプリパラメタ値
 BALL_WAIT  = $2    ;ボール移動時のウェイト値。値が大きいほど遅い
 ; BALL_WAIT  = $0    ;ボール移動時のウェイト値。値が大きいほど遅い
 RKT_WAIT   = $1    ;ラケット移動時のウェイト値。値が大きいほど遅い
 ; RKT_WAIT   = $0    ;ラケット移動時のウェイト値。値が大きいほど遅い
 
+	
 S_START    = 0
 S_PLAY     = 1
 S_MISS     = 2
@@ -102,6 +105,7 @@ game_start:
 	jsr score_bin2ascii     ; 得点をASCII文字列変換
 	jsr draw_score		; スコア文字列を画面表示
 	jsr draw_leftball	; 残りボール数を画面表示
+	jsr draw_block
 
 	lda #$40		; アクティブページを2pageに切替
 	sta page
@@ -111,7 +115,8 @@ page2_init:
 ;	jsr score_bin2ascii     ; 得点をASCII文字列変換
 	jsr draw_score		; スコア文字列を画面表示
 	jsr draw_leftball	; 残りボール数を画面表示
-
+	jsr draw_block
+	
 	lda #$20		; page1をアクティブに切替
 	sta page
 	
@@ -369,11 +374,11 @@ page2:
 ;****************************************
 .proc game_screen_draw
 	;縦線の描写
-	lda #%00000011
+	lda #%00001111
 	ldy #0
 	jsr vline
 
-	lda #%00110000
+	lda #%00111100
 	ldy #30
 	jsr vline
 
@@ -794,7 +799,7 @@ exit_loop:
 .proc add_score
 	lda bin_score
 	clc
-	adc #10			;得点+10
+	adc #100	;得点+10
 	sta bin_score
 	lda bin_score+1
 	adc #1
@@ -860,9 +865,6 @@ exit_loop:
 	sta vramX      ;X座標設定
 
 	jsr text_out
-;	jsr swap_page           ; ページ切り替え
-;	jsr text_out
-;	jsr swap_page           ; ページ切り替え
 	
 	rts
 .endproc
@@ -955,6 +957,62 @@ options: .byte "12TELSQ"
 optionsEnd:
 .endproc
 
+;****************************************
+; ブロックの表示
+;****************************************
+.proc draw_block
+	ldy #0
+	sty loop_cnt
+loop:
+	lda b_data1,y		;X座標値取得
+	and #$f0
+	cmp #0			;X座標値が0は描写しない
+	bne :+
+	iny
+	sty loop_cnt
+	jmp loop
+:	
+	lsr			;1/2
+	lsr			;1/4
+	lsr			;1/8
+	lsr			;1/16
+	asl			;2倍
+	asl			;4倍
+	sec
+	sbc #3
+	sta vramX
+
+	lda b_data1,y		;Y座標値取得
+	and #$0f
+	asl			;2倍
+	asl			;4倍
+	asl			;8倍
+	sec
+	sbc #7			;Y座標-7
+	sta vramY
+
+	lda #<blk_pat1		;描写データセット
+	sta pixL
+	lda #>blk_pat1
+	sta pixH
+
+	lda #$4			;描写データの幅セット
+	sta pix_width
+	lda #$8			;描写データの高さセット
+	sta pix_height
+	
+	jsr draw_sprite		;ビットマップ描写
+
+	ldy loop_cnt
+	iny
+	sty loop_cnt
+
+	cpy #21
+	bne loop
+
+	rts
+.endproc
+	
 ;****************************************
 ; ラケットの表示
 ; 指定されたzeroページの座標をもとに
@@ -1472,7 +1530,12 @@ asc_left:  .asciiz "0"				;残りのボール数(ascii)
 dmz1:	.asciiz "xxxxxxx"                       ;debug用。この領域が壊れてるかどうか
 
 	; $xy 0 : 消滅 1～15配置座標 x:X座標 y:Y座標
-b_data:	
+b_data1:	
+	.byte $11,$21,$31,$41,$51,$61,$71
+	.byte $12,$22,$32,$42,$52,$62,$72
+	.byte $13,$23,$33,$43,$53,$63,$73
+
+b_data2:	
 	.byte $11,$21,$31,$41,$51,$61,$71
 	.byte $12,$22,$32,$42,$52,$62,$72
 	.byte $13,$23,$33,$43,$53,$63,$73
@@ -1492,7 +1555,7 @@ rowH:
 ;テキスト描写データ
 game_title: .asciiz "B L O C K"
 hit_anykey: .asciiz "HIT ANY KEY"
-CP: .asciiz "(C) 2023-24 KOUJI55@GMAIL.COM"
+CP: .asciiz "(C) 2023 KOUJI55@GMAIL.COM"
 
 score: .asciiz "SCORE"
 hi_score: .asciiz "HSCORE"
@@ -1687,12 +1750,12 @@ pat4:  ;色付きパターン(偶数) ハーフビットシフトバージョン
 .byte $d0,$aa,$d5,$aa,$d5,$aa
 .byte $00,$aa,$d5,$aa,$d5,$8a
 
-block1:
-	.byte $00,$00
-	.byte $fd,$df
-	.byte $fd,$df
-	.byte $fd,$df
-	.byte $fd,$df
-	.byte $fd,$df
-	.byte $fd,$df
-	.byte $fd,$df
+blk_pat1:			;ブロックパターン1
+	.byte $00,$00,$00,$00
+	.byte $fc,$ff,$ff,$1f
+	.byte $fc,$ff,$ff,$1f
+	.byte $fc,$ff,$ff,$1f
+	.byte $fc,$ff,$ff,$1f
+	.byte $fc,$ff,$ff,$1f
+	.byte $fc,$ff,$ff,$1f
+	.byte $fc,$ff,$ff,$1f
