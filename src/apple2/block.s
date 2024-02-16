@@ -908,9 +908,9 @@ check_code:
 	rts
 left:
 	lda rpos_x              ; ラケットX座標をロード
-	cmp #0
-	bne :+                  ; X座標が0でなければX座標を更新
-	rts                     ; X座標が0の場合は何もせず復帰
+	cmp #1
+	bne :+                  ; X座標が1でなければX座標を更新
+	rts                     ; X座標が1の場合は何もせず復帰
 :
 	lda rpos_x
 	sec                     ; キャリーフラグをセット
