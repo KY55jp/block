@@ -596,7 +596,7 @@ hl1:	sta (GBASL),y
 ;****************************************
 .proc vline
 	sta   HCOLOR1
-	ldx   #190           ; Start at second-to-last row
+	ldx   #179           ; Start at second-to-last row
 vl1:    lda   rowL,x         ; Get the row address
 	sta   GBASL
 	;lda   #$20           ; set HGR Page 1($20)
@@ -908,9 +908,9 @@ check_code:
 	rts
 left:
 	lda rpos_x              ; ラケットX座標をロード
-	cmp #1
-	bne :+                  ; X座標が1でなければX座標を更新
-	rts                     ; X座標が1の場合は何もせず復帰
+	cmp #0
+	bne :+                  ; X座標が0でなければX座標を更新
+	rts                     ; X座標が0の場合は何もせず復帰
 :
 	lda rpos_x
 	sec                     ; キャリーフラグをセット
