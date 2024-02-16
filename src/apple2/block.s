@@ -777,7 +777,7 @@ exit_loop:
 
 	tya			;Y->A
 	clc
-	adc #3			;A=A+3(割る値のビット長)
+	adc #3			;A=A+3(割る値のバイト長)
 	tay			;A->Y
 
 	cpx #6             ;すべての桁を計算した?(X == 6?)
@@ -799,10 +799,10 @@ exit_loop:
 .proc add_score
 	lda bin_score
 	clc
-	adc #100	;得点+10
+	adc #10	;得点+10
 	sta bin_score
 	lda bin_score+1
-	adc #1
+	adc #0
 	sta bin_score+1
 	lda bin_score+2
 	adc #0
