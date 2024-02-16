@@ -752,36 +752,36 @@ compare:
 	jmp exit_loop
 substruct:
 	;引き算実行
-	sec              ; 引き算するためキャリーフラグをセット
-	lda bin_score    ; 割られる数をロード
-	sbc asc_tbl,y    ; 割る数で引き算
-	sta bin_score	 ; 引いた数をメモリにストア
-	lda bin_score+1	 ; 以降、２バイト分続ける
+	sec			; 引き算するためキャリーフラグをセット
+	lda bin_score		; 割られる数をロード
+	sbc asc_tbl,y		; 割る数で引き算
+	sta bin_score		; 引いた数をメモリにストア
+	lda bin_score+1		; 以降、２バイト分続ける
 	sbc asc_tbl+1,y
 	sta bin_score+1
 	lda bin_score+2
 	sbc asc_tbl+2,y
 	sta bin_score+2
 
-	inc loop_cnt       ;割った数+1
+	inc loop_cnt		;割った数+1
 
-	jmp compare      ;繰り返す
+	jmp compare		;繰り返す
 exit_loop:
-	lda loop_cnt       ;割った数をAにセット
-	clc		   ;足し算するのでキャリーフラグをクリア
-	adc #$30           ;ASCII'0'($30)+カウンタ
-	sta asc_score,x	   ;asc_score+xにASCII文字を格納
-	inx                ;ASCII桁数(X)+1
-	lda #0		   ;割った数を0クリア
-	sta loop_cnt	   ;格納
+	lda loop_cnt		;割った数をAにセット
+	clc			;足し算するのでキャリーフラグをクリア
+	adc #$30		;ASCII'0'($30)+カウンタ
+	sta asc_score,x		;asc_score+xにASCII文字を格納
+	inx			;ASCII桁数(X)+1
+	lda #0			;割った数を0クリア
+	sta loop_cnt		;格納
 
 	tya			;Y->A
 	clc
 	adc #3			;A=A+3(割る値のバイト長)
 	tay			;A->Y
 
-	cpx #6             ;すべての桁を計算した?(X == 6?)
-	bne compare	   ;していない場合は、引き算を繰り返す
+	cpx #6			;すべての桁を計算した?(X == 6?)
+	bne compare		;していない場合は、引き算を繰り返す
 
 	pla                ;スタックに退避していたバイナリスコアを復元
 	sta bin_score+2
@@ -1752,10 +1752,10 @@ pat4:  ;色付きパターン(偶数) ハーフビットシフトバージョン
 
 blk_pat1:			;ブロックパターン1
 	.byte $00,$00,$00,$00
-	.byte $fc,$ff,$ff,$1f
-	.byte $fc,$ff,$ff,$1f
-	.byte $fc,$ff,$ff,$1f
-	.byte $fc,$ff,$ff,$1f
-	.byte $fc,$ff,$ff,$1f
-	.byte $fc,$ff,$ff,$1f
-	.byte $fc,$ff,$ff,$1f
+	.byte $fc,$ff,$ff,$3f
+	.byte $fc,$ff,$ff,$3f
+	.byte $fc,$ff,$ff,$3f
+	.byte $fc,$ff,$ff,$3f
+	.byte $fc,$ff,$ff,$3f
+	.byte $fc,$ff,$ff,$3f
+	.byte $fc,$ff,$ff,$3f
