@@ -49,6 +49,7 @@ ball_left:   .res 1 ;残りボール数(初期値は3)
 seed:        .res 2 ; initialize 16-bit seed to any value except 0(乱数の種)
 r_color:     .res 1 ;ラケットの描写色 0:ノーマル 1:リバース
 loop_cnt:    .res 1 ;汎用内部ループ変数
+z_temp:      .res 3 ;汎用バッファ
 
 ; 定数定義
 HGR1SCRN   = $2000 ;ハイレゾページ１の開始アドレス
@@ -1281,16 +1282,57 @@ adjust2:
 
 ;****************************************
 ;
-;ボールとラケットの当たり判定
+;ボールとブロックの当たり判定
 ;
 ;
 ;****************************************
+.proc block_collison_detection
+	ldx #0
+	stx loop_cnt
+
+	lda rpos_x
+	lda rpos_y
+x_detection:
+	lda b_data1,x           ;ブロックのXY座標を取得
+	and #$f0		;X座標部分をマスク
+	lsr                     ;X座標 1/2
+	lsr                     ;X座標 1/4
+	lsr                     ;X座標 1/8
+	lsr                     ;X座標 1/16
+	sta z_temp		;演算結果を一時領域に退避
+	lda rpos_x		;ボールのX座標値をロード
+	lsr                     ;ボールのX座標値を1/2
+	cmp z_temp		;ボールのX座標値とブロックのX座標を比較
+
+y_detection:
+	lda b_data1,x           ;ブロックのXY座標を取得
+	and #$0f                ;Y座標部分をマスク
+	sta z_temp		;演算結果を一時領域に退避
+	lda rpos_y		;ボールのX座標値をロード
+	cmp z_temp		;ボールのY座標値とブロックのY座標を比較
+
+erase_block:
+	
+next_check:
+	ldx loop_cnt
+	inx
+	stx loop_cnt
+	cpx #(7 * 3)
+	bne x_detection
+
+	rts
+.endproc
+
+;****************************************
+;ボールとラケットの当たり判定
+;ロジック
+;ラケットのX座標とボールのX座標を比較
+;X座標の差分が0〜6(ラケットのXサイズ)である かつ
+;ボールのY座標をチェックし、Y座標が画面の下部に到達している
+;ラケットX座標 - ボールX座標
+;
+;****************************************
 .proc collison_detection
-	;ロジック
-	;ラケットのX座標とボールのX座標を比較
-	;X座標の差分が0〜6(ラケットのXサイズ)である かつ
-	;ボールのY座標をチェックし、Y座標が画面の下部に到達している
-	;ラケットX座標 - ボールX座標
 	lda rpos_x
 	tax			;rpos_x(オリジナル値)をXレジスタに退避
 	lsr                     ;ラケットX座標を1/2
@@ -1529,8 +1571,8 @@ asc_left:  .asciiz "0"				;残りのボール数(ascii)
 
 dmz1:	.asciiz "xxxxxxx"                       ;debug用。この領域が壊れてるかどうか
 
-	; $xy 0 : 消滅 1～15配置座標 x:X座標 y:Y座標
 b_data1:	
+	; $xy 0 : 消滅 1～15配置座標 x:X座標 y:Y座標
 	.byte $11,$21,$31,$41,$51,$61,$71
 	.byte $12,$22,$32,$42,$52,$62,$72
 	.byte $13,$23,$33,$43,$53,$63,$73
