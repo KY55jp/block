@@ -963,33 +963,35 @@ optionsEnd:
 ;****************************************
 .proc draw_block
 	ldy #0
+	lda b_data1,y           ;データ個数をロード
+	sta z_temp		;データ個数をストア
+	iny
 	sty loop_cnt
 loop:
 	lda b_data1,y		;X座標値取得
-	and #$f0
-	cmp #0			;X座標値が0は描写しない
-	bne :+
+	and #$80
+	cmp #80			;描写ビット(8bit)をチェック
+	beq :+			;描写ビットが1の場合は描写する
+	iny			;描写ビットが0の場合はY=Y+2
 	iny
 	sty loop_cnt
-	jmp loop
+	jmp loop_cnt_check
 :	
-	lsr			;1/2
-	lsr			;1/4
-	lsr			;1/8
-	lsr			;1/16
-	asl			;2倍
-	asl			;4倍
-	sec
-	sbc #3
+	lda b_data1,y
+	and #$40                ;消去ビットをマスク
+	cmp #$40
+	beq :+			;消去ビットが0の場合は何もしない
+	lda b_data1,y           ;X座標をロード
+	and #$3F		;描写ビット、消去ビットを0マスク
+	sta b_data1,y		;X座標をストア
+:	
+	lda b_data1,y
+	and #$1f
 	sta vramX
 
+	iny	                ;Y座標値を取得するためにY++
+	sty loop_cnt
 	lda b_data1,y		;Y座標値取得
-	and #$0f
-	asl			;2倍
-	asl			;4倍
-	asl			;8倍
-	sec
-	sbc #7			;Y座標-7
 	sta vramY
 
 	lda #<blk_pat1		;描写データセット
@@ -1007,8 +1009,8 @@ loop:
 	ldy loop_cnt
 	iny
 	sty loop_cnt
-
-	cpy #21
+loop_cnt_check:
+	cpy z_temp
 	bne loop
 
 	rts
@@ -1306,23 +1308,38 @@ x_detection:
 	cmp z_temp		;ボールのX座標値とブロックのX座標を比較
 	beq y_detection		;ボールX = ブロックX であればY座標チェック
 	bcs :+			;ボールX >= ブロックX であれば次のチェック
-	jmp next_check:		;次のブロックチェック
+	jmp next_check		;次のブロックチェック
 :
 	sec                     ;キャリフラグセット
 	sbc z_temp		;ボールX座標 - ブロックX座標
 	cmp #4			;ボールX座標とブロックX座標距離が4以内かチェック
 	beq y_detection		;同じであればY座標チェック
 	bcc y_detection		;ボールX座標 < 4 であればY座標チェック
-	jmp next_check:		;次のブロックチェック
+	jmp next_check		;次のブロックチェック
 
 y_detection:
 	lda b_data1,x           ;ブロックのXY座標を取得
 	and #$0f                ;Y座標部分をマスク
 	sta z_temp		;演算結果を一時領域に退避
-	lda rpos_y		;ボールのX座標値をロード
-	cmp z_temp		;ボールのY座標値とブロックのY座標を比較
+	lda bpos_y		;ボールのX座標値をロード
+	cmp z_temp		;ボールのY座標値 - ブロックのY座標
+	bcc next_check		;ボールのY座標値 < ブロックのY座標 ヒットしていないので次のチェック
+	beq erase_block		;Y座標の位置が同じならヒット
 
+	; ボールのY座標値が(ブロックのY座標 + 8)の範囲に収まっているかチェック
+	lda z_temp              ;ブロックのY座標を取得
+	clc                     ;キャリーフラグクリア
+	adc #8			;ブロックのY座標+8
+	sta z_temp		;演算結果をストア
+	lda bpos_y		;ボールのY座標をロード
+	cmp z_temp		;ブロックのY座標+8 - ボールのY座標
+	bcc next_check		;ブロックのY座標+8 < ボールのY座標 はヒットしていない
+	;ヒット
 erase_block:
+	
+	lda #0
+	sta b_data1,x
+flip_yvec:
 	
 next_check:
 	ldx loop_cnt
@@ -1583,10 +1600,21 @@ asc_left:  .asciiz "0"				;残りのボール数(ascii)
 dmz1:	.asciiz "xxxxxxx"                       ;debug用。この領域が壊れてるかどうか
 
 b_data1:	
-	; $xy 0 : 消滅 1～15配置座標 x:X座標 y:Y座標
-	.byte $11,$21,$31,$41,$51,$61,$71
-	.byte $12,$22,$32,$42,$52,$62,$72
-	.byte $13,$23,$33,$43,$53,$63,$73
+; 2バイトで１個のブロックデータを表現
+; 1バイト目
+; 76543210
+; 0〜4ビット:X座標(0〜31)
+; 7ビット:状態ビット 0:消去された 1:存在している
+; 6ビット:消去ビット 0:非消去指示なし 1:消去指示あり
+; 1の場合、描写ルーチンで当該ビットを0にセット
+; あわせて、状態ビットを1にセットすること。
+; ブロック消去時のデータフローは次のとおり。
+; 10 -> 11 -> ブロック消去 -> 00
+; 2バイト目 ブロックのY座標(0〜191)
+.byte $07                     ;テーブルデータの個数(個数領域も含む)
+.byte $81,$01
+.byte $85,$01
+.byte $89,$01
 
 b_data2:	
 	.byte $11,$21,$31,$41,$51,$61,$71
