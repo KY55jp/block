@@ -1289,9 +1289,6 @@ adjust2:
 .proc block_collison_detection
 	ldx #0
 	stx loop_cnt
-
-	lda rpos_x
-	lda rpos_y
 x_detection:
 	lda b_data1,x           ;ブロックのXY座標を取得
 	and #$f0		;X座標部分をマスク
@@ -1299,10 +1296,24 @@ x_detection:
 	lsr                     ;X座標 1/4
 	lsr                     ;X座標 1/8
 	lsr                     ;X座標 1/16
+	asl			;2倍
+	asl			;4倍
+	sec			;キャリーフラグセット
+	sbc #4			;X座標が1開始 かつ　4の倍数のため-4する
 	sta z_temp		;演算結果を一時領域に退避
-	lda rpos_x		;ボールのX座標値をロード
-	lsr                     ;ボールのX座標値を1/2
+
+	lda bpos_x1		;ボールのX座標値をロード
 	cmp z_temp		;ボールのX座標値とブロックのX座標を比較
+	beq y_detection		;ボールX = ブロックX であればY座標チェック
+	bcs :+			;ボールX >= ブロックX であれば次のチェック
+	jmp next_check:		;次のブロックチェック
+:
+	sec                     ;キャリフラグセット
+	sbc z_temp		;ボールX座標 - ブロックX座標
+	cmp #4			;ボールX座標とブロックX座標距離が4以内かチェック
+	beq y_detection		;同じであればY座標チェック
+	bcc y_detection		;ボールX座標 < 4 であればY座標チェック
+	jmp next_check:		;次のブロックチェック
 
 y_detection:
 	lda b_data1,x           ;ブロックのXY座標を取得
