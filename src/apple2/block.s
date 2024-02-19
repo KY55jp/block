@@ -970,7 +970,7 @@ optionsEnd:
 loop:
 	lda b_data1,y		;X座標値取得
 	and #$80
-	cmp #80			;描写ビット(8bit)をチェック
+	cmp #$80		;描写ビット(8bit)をチェック
 	beq :+			;描写ビットが1の場合は描写する
 	iny			;描写ビットが0の場合はY=Y+2
 	iny
@@ -980,7 +980,7 @@ loop:
 	lda b_data1,y
 	and #$40                ;消去ビットをマスク
 	cmp #$40
-	beq :+			;消去ビットが0の場合は何もしない
+	bne :+			;消去ビットが0の場合は何もしない
 	lda b_data1,y           ;X座標をロード
 	and #$3F		;描写ビット、消去ビットを0マスク
 	sta b_data1,y		;X座標をストア
