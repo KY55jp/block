@@ -1316,9 +1316,9 @@ x_detection:
 :
 	sec                     ;キャリフラグセット
 	sbc z_temp+1		;ボールX座標 - ブロックX座標
-	cmp #4			;ボールX座標とブロックX座標距離が4以内かチェック
+	cmp #8			;ボールX座標とブロックX座標距離が8以内(4char x 2)かチェック
 	beq y_detection		;同じであればY座標チェック
-	bcc y_detection		;ボールX座標 < 4 であればY座標チェック
+	bcc y_detection		;ボールX座標 < 8 であればY座標チェック
 	jmp next_check		;次のブロックチェック
 
 y_detection:
