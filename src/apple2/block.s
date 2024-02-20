@@ -1301,9 +1301,11 @@ adjust2:
 	lda b_data1,y
 	sty z_temp
 	iny
+	sty loop_cnt
 x_detection:
-	lda b_data1,y           ;ブロックのXY座標を取得
+	lda b_data1,y           ;ブロックのX座標を取得
 	and #$1f		;X座標部分をマスク
+	asl			;ブロックのX座標 x 2(ボールのX座標と単位をそろえるため)
 	sta z_temp+1		;演算結果を一時領域に退避
 
 	lda bpos_x1		;ボールのX座標値をロード
@@ -1313,41 +1315,48 @@ x_detection:
 	jmp next_check		;次のブロックチェック
 :
 	sec                     ;キャリフラグセット
-	sbc z_temp		;ボールX座標 - ブロックX座標
+	sbc z_temp+1		;ボールX座標 - ブロックX座標
 	cmp #4			;ボールX座標とブロックX座標距離が4以内かチェック
 	beq y_detection		;同じであればY座標チェック
 	bcc y_detection		;ボールX座標 < 4 であればY座標チェック
 	jmp next_check		;次のブロックチェック
 
 y_detection:
-	lda b_data1,x           ;ブロックのXY座標を取得
-	and #$0f                ;Y座標部分をマスク
-	sta z_temp		;演算結果を一時領域に退避
-	lda bpos_y		;ボールのX座標値をロード
-	cmp z_temp		;ボールのY座標値 - ブロックのY座標
-	bcc next_check		;ボールのY座標値 < ブロックのY座標 ヒットしていないので次のチェック
-	beq erase_block		;Y座標の位置が同じならヒット
-
-	; ボールのY座標値が(ブロックのY座標 + 8)の範囲に収まっているかチェック
-	lda z_temp              ;ブロックのY座標を取得
-	clc                     ;キャリーフラグクリア
-	adc #8			;ブロックのY座標+8
-	sta z_temp		;演算結果をストア
-	lda bpos_y		;ボールのY座標をロード
-	cmp z_temp		;ブロックのY座標+8 - ボールのY座標
-	bcc next_check		;ブロックのY座標+8 < ボールのY座標 はヒットしていない
-	;ヒット
+	iny
+	lda b_data1,y           ;ブロックのY座標を取得
+	sta z_temp+1		;演算結果を一時領域に退避
+	lda bpos_y		;ボールのY座標値をロード
+	sec
+	sbc z_temp+1		;ボールY座標 - ラケットY座標
+	bpl :+
+	eor #$ff
+	clc
+	adc #1
+:	
+	cmp #8			;ボールのY座標値 - ブロックのY座標の相対値が8かどうか比較
+	beq erase_block		;ボールのY座標値 = ブロックのY座標 であれば、ブロック消去
+	bcc erase_block		;ボールのY座標値 < ブロックのY座標 であれば、ブロック消去
+	jmp next_check		;次のブロックチェック
+:	
 erase_block:
-	
-	lda #0
-	sta b_data1,x
-flip_yvec:
+	dey			;ブロックのX座標取得のため Y = Y - 1
+	lda b_data1,y           ;ブロックのX座標を取得
+	eor #$40		;消去ビットを立てる
+	sta b_data1,y           ;ブロックのX座標に格納
+	iny			;Y = Y + 1
+
+flip_yvec:			;ボールのYベクトル値反転
+	lda b_vy
+	eor #$ff
+	clc
+	adc #1
+	sta b_vy
 	
 next_check:
-	ldx loop_cnt
-	inx
+	ldy loop_cnt
+	iny
 	stx loop_cnt
-	cpx #(7 * 3)
+	cpx z_temp
 	bne x_detection
 
 	rts
@@ -1601,7 +1610,6 @@ asc_left:  .asciiz "0"				;残りのボール数(ascii)
 
 dmz1:	.asciiz "xxxxxxx"                       ;debug用。この領域が壊れてるかどうか
 
-b_data1:	
 ; 2バイトで１個のブロックデータを表現
 ; 1バイト目
 ; 76543210
@@ -1613,6 +1621,7 @@ b_data1:
 ; ブロック消去時のデータフローは次のとおり。
 ; 10 -> 11 -> ブロック消去 -> 00
 ; 2バイト目 ブロックのY座標(0〜191)
+b_data1:	
 .byte $07                     ;テーブルデータの個数(個数領域も含む)
 .byte $81,$01		      ;１つ目のブロックデータ
 .byte $85,$01		      ;２つ目のブロックデータ
