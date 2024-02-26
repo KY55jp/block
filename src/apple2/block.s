@@ -1305,20 +1305,34 @@ adjust2:
 ;
 ;****************************************
 .proc block_collison_detection
+	total_blks = z_temp
+	f_bposx    = z_temp + 1
+	blk_posx   = z_temp + 2
+	f_bposy    = z_temp + 3
+	blk_posy   = z_temp + 4
+
 	ldy #0
-	lda b_data1,y
-	sty z_temp
-	iny
 	sty loop_cnt
-calc_future_pos_x:
-	
+	lda b_data1_cnt
+	sty total_blks
+calc_future_pos_x:              ;ボールの未来位置を計算
+	lda b_posx1
+	clc
+	adc b_vx
+	sta f_bposx
 x_detection:
-	lda b_data1,y           ;ブロックのX座標を取得
-	and #$1f		;X座標部分をマスク
+	lda b_data1+1,y         ;ブロックのX座標を取得
 	asl			;ブロックのX座標 x 2(ボールのX座標と単位をそろえるため)
-	sta z_temp+1		;演算結果を一時領域に退避
+	sta blk_posx		;演算結果を一時領域に退避
+	lda b_data1+2,y		;ブロックの幅を取得
+	lsr			;幅を1/2に計算(中央値を求めるため)
+	clc			;キャリーフラグクリア
+	adc blk_posx            ;ブロックの幅(1/2) + ブロックのX座標
+	sta blk_posx		;演算結果を格納
 
 	lda bpos_x1		;ボールのX座標値をロード
+	sec
+	sbc blk_posx	        ;ボールのX座標 - ブロックの中央値
 	cmp z_temp+1		;ボールのX座標値とブロックのX座標を比較
 	beq y_detection		;ボールX = ブロックX であればY座標チェック
 	bcs :+			;ボールX >= ブロックX であれば次のチェック
