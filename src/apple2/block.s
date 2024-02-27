@@ -1315,14 +1315,19 @@ adjust2:
 	sty loop_cnt
 	lda b_data1_cnt
 	sty total_blks
-calc_future_pos_x:              ;ボールの未来位置を計算
-	lda b_posx1
+calc_future_pos:                ;ボールの未来位置を計算
+	lda bpos_x1
 	clc
 	adc b_vx
 	sta f_bposx
+
+	lda bpos_y
+	clc
+	adc b_vy
+	sta f_bposy
 x_detection:
 	lda b_data1+1,y         ;ブロックのX座標を取得
-	asl			;ブロックのX座標 x 2(ボールのX座標と単位をそろえるため)
+;	asl			;ブロックのX座標 x 2(ボールのX座標と単位をそろえるため)
 	sta blk_posx		;演算結果を一時領域に退避
 	lda b_data1+2,y		;ブロックの幅を取得
 	lsr			;幅を1/2に計算(中央値を求めるため)
@@ -1333,41 +1338,42 @@ x_detection:
 	lda bpos_x1		;ボールのX座標値をロード
 	sec
 	sbc blk_posx	        ;ボールのX座標 - ブロックの中央値
-	cmp z_temp+1		;ボールのX座標値とブロックのX座標を比較
-	beq y_detection		;ボールX = ブロックX であればY座標チェック
-	bcs :+			;ボールX >= ブロックX であれば次のチェック
-	jmp next_check		;次のブロックチェック
+	bpl :+			;演算結果がプラスならば判定処理へ
+	eor #$ff		;マイナスならば、2の補数を取得
+	clc
+	adc #1
 :
-	sec                     ;キャリフラグセット
-	sbc z_temp+1		;ボールX座標 - ブロックX座標
-	cmp #8			;ボールX座標とブロックX座標距離が8以内(4char x 2)かチェック
-	beq y_detection		;同じであればY座標チェック
-	bcc y_detection		;ボールX座標 < 8 であればY座標チェック
-	jmp next_check		;次のブロックチェック
+	cmp #$2		        ;差分が2?
+	bcc y_detection		;差分 <= 2
+	jmp next_check		;差分が>2であれば、次のチェック
 
 y_detection:
-	iny
-	lda b_data1,y           ;ブロックのY座標を取得
-	sta z_temp+1		;演算結果を一時領域に退避
+	lda b_data1+3,y         ;ブロックのY座標を取得
+	sta blk_posy		;演算結果を一時領域に退避
+	lda b_data1+4,y		;ブロックの高さを取得
+	lsr			;高さを半分に
+	clc
+	adc blk_posy		;ブロックの高さ(1/2) + ブロックのY座標
+	sta blk_posy
+	
 	lda bpos_y		;ボールのY座標値をロード
+	clc
+	adc #$4			;ボールの高さ(1/2)を加算
 	sec
-	sbc z_temp+1		;ボールY座標 - ラケットY座標
+	sbc blk_posy		;ボールY座標 - ラケットY座標
 	bpl :+
 	eor #$ff
 	clc
 	adc #1
 :	
 	cmp #8			;ボールのY座標値 - ブロックのY座標の相対値が8かどうか比較
-	beq erase_block		;ボールのY座標値 = ブロックのY座標 であれば、ブロック消去
-	bcc erase_block		;ボールのY座標値 < ブロックのY座標 であれば、ブロック消去
+	bcc erase_block		;ボールのY座標値 <= ブロックのY座標 であれば、ブロック消去
 	jmp next_check		;次のブロックチェック
 
 erase_block:
-	dey			;ブロックのX座標取得のため Y = Y - 1
-	lda b_data1,y           ;ブロックのX座標を取得
+	lda b_data1,y           ;ブロックの状態データを取得
 	eor #$40		;消去ビットを立てる
 	sta b_data1,y           ;ブロックのX座標に格納
-	iny			;Y = Y + 1
 
 flip_yvec:			;ボールのYベクトル値反転
 	lda b_vy
@@ -1379,8 +1385,12 @@ flip_yvec:			;ボールのYベクトル値反転
 next_check:
 	ldy loop_cnt
 	iny
-	stx loop_cnt
-	cpx z_temp
+	iny
+	iny
+	iny
+	iny
+	sty loop_cnt
+	cpy total_blks
 	bne x_detection
 
 	rts
