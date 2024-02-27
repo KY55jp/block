@@ -1372,7 +1372,7 @@ y_detection:
 
 erase_block:
 	lda b_data1,y           ;ブロックの状態データを取得
-	eor #$40		;消去ビットを立てる
+	eor #$40		;描写ビットを立てる
 	sta b_data1,y           ;ブロックのX座標に格納
 
 flip_yvec:			;ボールのYベクトル値反転
