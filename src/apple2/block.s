@@ -1340,11 +1340,11 @@ x_detection:
 	sbc blk_posx	        ;ボールのX座標 - ブロックの中央値
 	bpl :+			;演算結果がプラスならば判定処理へ
 	eor #$ff		;マイナスならば、2の補数を取得
-	clc
-	adc #1
+	clc			;足し算をするのでキャリーフラグをクリア
+	adc #1			;A=A+1
 :
 	cmp #$2		        ;差分が2?
-	bcc y_detection		;差分 <= 2
+	bcc y_detection		;差分 <= 2 であれば、Y座標のチェック
 	jmp next_check		;差分が>2であれば、次のチェック
 
 y_detection:
@@ -1373,7 +1373,7 @@ y_detection:
 erase_block:
 	lda b_data1,y           ;ブロックの状態データを取得
 	eor #$40		;描写ビットを立てる
-	sta b_data1,y           ;ブロックのX座標に格納
+	sta b_data1,y           ;ブロックの状態データに格納
 
 flip_yvec:			;ボールのYベクトル値反転
 	lda b_vy
@@ -1383,8 +1383,8 @@ flip_yvec:			;ボールのYベクトル値反転
 	sta b_vy
 	
 next_check:
-	ldy loop_cnt
-	iny
+	ldy loop_cnt            ;Yレジスタの値をロード
+	iny			;Yレジスタの値を+5(次のブロックデータへポインタを加算)
 	iny
 	iny
 	iny
