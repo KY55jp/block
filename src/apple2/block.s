@@ -545,7 +545,7 @@ loop:
 
 	jsr text_out
 
-	;'(C) 2023 KOUJI55@GMAIL.COM'文字列の表示
+	;'(C) 2024 YOSI55@EMAILL.COM'文字列の表示
 	lda #<CP
 	sta strL
 	lda #>CP
@@ -1296,7 +1296,7 @@ adjust2:
 ;ボールの未来位置を計算
 ;ボールの未来位置と、ブロックの座標を比較
 ;このとき、X座標とY座標それぞれの軸で比較
-;ヒットした場合、ボールの進行方向を逆転
+;ヒットした場合、ボールのY進行方向を逆転する。
 ;合わせて、ブロックの消去ビットを立てる
 ;すべてのブロックの座標を比較・演算する
 ;座標計算の最適化アルゴリズムとして
@@ -1686,7 +1686,7 @@ rowH:
 ;テキスト描写データ
 game_title: .asciiz "B L O C K"
 hit_anykey: .asciiz "HIT ANY KEY"
-CP: .asciiz "(C) 2023 KOUJI55@GMAIL.COM"
+CP: .asciiz "(C) 2024 YOSI55@EMAIL.COM"
 
 score: .asciiz "SCORE"
 hi_score: .asciiz "HSCORE"
