@@ -1201,7 +1201,9 @@ preparation:
 :
 	lda #BALL_WAIT      ; #BALL_WAIT -> ball_wait
 	sta ball_wait
-
+	;ブロック衝突判定
+	jsr block_collison_detection
+	
 	;X座標の未来座標の位置を計算
 	lda bpos_x2             ;ボールのビットマップパターンをロード
 	ldx #0                  ;0 -> X(ボールのビットマップパターン)
@@ -1314,17 +1316,17 @@ adjust2:
 	ldy #0
 	sty loop_cnt
 	lda b_data1_cnt
-	sty total_blks
+	sta total_blks
 calc_future_pos:                ;ボールの未来位置を計算
 	lda bpos_x1
 	clc
 	adc b_vx
-	sta f_bposx
+	sta f_bposx             ;ボールの未来X座標を格納
 
 	lda bpos_y
 	clc
 	adc b_vy
-	sta f_bposy
+	sta f_bposy             ;ボールの未来Y座標を格納
 x_detection:
 	lda b_data1+1,y         ;ブロックのX座標を取得
 ;	asl			;ブロックのX座標 x 2(ボールのX座標と単位をそろえるため)
