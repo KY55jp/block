@@ -972,7 +972,7 @@ loop:
 	lda b_data1,y		 ;ブロックの状態を取得
 	and #$80
 	cmp #$80		 ;描写ビット(8bit)をチェック
-	beq :+			 ;描写ビットが1の場合は描写する
+	beq draw_check		 ;描写ビットが1の場合は描写する
 	iny			 ;描写ビットが0の場合はY=Y+5
 	iny
 	iny
@@ -980,11 +980,11 @@ loop:
 	iny
 	sty loop_cnt
 	jmp loop_cnt_check
-:	
+draw_check:	
 	lda b_data1,y		 ;ブロックの状態を取得
 	and #$40		 ;描写ビットをマスク
 	cmp #$40
-	bne :+			 ;描写ビットが0の場合は何もしない
+	bne :+			 ;描写ビットが0の場合は、ブロックの消去処理
 	lda b_data1,y		 ;ブロックの状態を取得
 	and #$bf		 ;描写ビットを0に設定
 	sta b_data1,y
