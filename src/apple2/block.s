@@ -106,17 +106,14 @@ game_start:
 	jsr score_bin2ascii     ; 得点をASCII文字列変換
 	jsr draw_score		; スコア文字列を画面表示
 	jsr draw_leftball	; 残りボール数を画面表示
-;	jsr draw_block
 
 	lda #$40		; アクティブページを2pageに切替
 	sta page
 page2_init:
 	jsr hclear		; ページクリア
 	jsr game_screen_draw    ; ゲームメイン画面の描写
-;	jsr score_bin2ascii     ; 得点をASCII文字列変換
 	jsr draw_score		; スコア文字列を画面表示
 	jsr draw_leftball	; 残りボール数を画面表示
-;	jsr draw_block
 	
 	lda #$20		; page1をアクティブに切替
 	sta page
@@ -127,8 +124,6 @@ page1_init:
 	jsr swap_page
 	jsr draw_racket		; ラケットを初期表示
 	jsr draw_ball           ; ボールの初期表示
-
-;	jsr swap_page		; ページ切替
 main_loop:
 	jsr draw_racket		; ラケット消去
 	jsr draw_ball           ; ボール消去
