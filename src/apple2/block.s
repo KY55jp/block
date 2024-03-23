@@ -981,11 +981,11 @@ optionsEnd:
 	
 	lda b_data1_cnt	         ;データの個数を取得
 	sta total_blks		 ;データ個数をストア
-	ldy #0
-	sty loop_cnt
+	ldy #0			 ;ループカウンタを0で初期化
+	sty loop_cnt		 ;ループカウンタ変数に格納
 loop:
 	lda b_data1,y		 ;ブロックの状態を取得
-	and #$80
+	and #$80		 ;ビット状態をマスク
 	cmp #$80		 ;状態ビット(8bit)をチェック
 	beq draw_check		 ;状態ビットが1の場合は描写する
 	jmp next_blk_up		 ;状態ビットが0の場合は描写（消去）する
