@@ -1241,7 +1241,7 @@ preparation:
 	lda #BALL_WAIT      ; #BALL_WAIT -> ball_wait
 	sta ball_wait
 	;ブロック衝突判定
-	jsr block_collison_detection
+	jsr block_collison_detection ;ブロック衝突判定
 	
 	;X座標の未来座標の位置を計算
 	lda bpos_x2             ;ボールのビットマップパターンをロード
@@ -1312,9 +1312,9 @@ bottom_check:
 	
 adjust2:
 	;ラケットとの衝突判定
-	lda #175
-	sta bpos_y
-	jsr collison_detection
+	lda #175	        ;調整値
+	sta bpos_y	        ;ボールのY座標を補正・調整
+	jsr collison_detection  ;ラケットとの衝突判定
 
 	jmp :++			;rts
 
@@ -1346,25 +1346,25 @@ adjust2:
 ;
 ;****************************************
 .proc block_collison_detection
-	total_blks = z_temp
-	f_bposx    = z_temp + 1
-	blk_posx   = z_temp + 2
-	f_bposy    = z_temp + 3
-	blk_posy   = z_temp + 4
+	total_blks = z_temp     ;合計のブロック数(ループ回数)
+	f_bposx    = z_temp + 1	;未来のボールX座標
+	blk_posx   = z_temp + 2 ;ブロックのX座標
+	f_bposy    = z_temp + 3	;未来のボールY座標
+	blk_posy   = z_temp + 4	;ブロックのY座標
 
-	ldy #0
-	sty loop_cnt
-	lda b_data1_cnt
-	sta total_blks
+	ldy #0                  ;ループカウンタを0をYレジスタにセット
+	sty loop_cnt		;ループカウンタ変数を0で初期化
+	lda b_data1_cnt		;合計のブロック個数をAレジスタにセット
+	sta total_blks		;Aレジスタの値を合計ブロック変数にセット
 calc_future_pos:                ;ボールの未来位置を計算
-	lda bpos_x1
-	clc
-	adc b_vx
+	lda bpos_x1		;現在のボールX座標をAレジスタにロード
+	clc			;キャリーフラグをクリア
+	adc b_vx		;ボールX座標 + ボールXベクトル(-1 or 1) -> Aレジスタ
 	sta f_bposx             ;ボールの未来X座標を格納
 
-	lda bpos_y
-	clc
-	adc b_vy
+	lda bpos_y              ;現在のボールY座標をAレジスタにロード
+	clc			;キャリーフラグをクリア
+	adc b_vy		;ボールY座標 + ボールYベクトル(-1 or 1) -> Aレジスタ
 	sta f_bposy             ;ボールの未来Y座標を格納
 x_detection:
 	lda b_data1+1,y         ;ブロックのX座標を取得
@@ -1380,9 +1380,9 @@ x_detection:
 	sec
 	sbc blk_posx	        ;ボールのX座標 - ブロックの中央値
 	bpl :+			;演算結果がプラスならば判定処理へ
-	eor #$ff		;マイナスならば、2の補数を取得
+	eor #$ff		;マイナスならば、2の補数を取得(絶対数を求める)
 	clc			;足し算をするのでキャリーフラグをクリア
-	adc #1			;A=A+1
+	adc #1			;演算結果の絶対数(+の値)を求める
 :
 	cmp #$2		        ;差分が2?
 	bcc y_detection		;差分 <= 2 であれば、Y座標のチェック
@@ -1400,12 +1400,12 @@ y_detection:
 	lda f_bposy		;ボールのY座標値をロード
 	clc
 	adc #$4			;ボールの高さ(1/2)を加算
-	sec
+	sec			;キャリーフラグをセット
 	sbc blk_posy		;ボールY座標 - ラケットY座標
-	bpl :+
-	eor #$ff
-	clc
-	adc #1
+	bpl :+			;減算結果が +(プラス) であれば差をチェック
+	eor #$ff                ;マイナスならば、2の補数を取得(絶対数を求める)
+	clc			;足し算をするのでキャリーフラグをクリア
+	adc #1			;演算結果の絶対数(+の値)を求める
 :	
 	cmp #8			;ボールのY座標値 - ブロックのY座標の相対値が8かどうか比較
 	bcc erase_block		;ボールのY座標値 <= ブロックのY座標 であれば、ブロック消去
@@ -1417,11 +1417,11 @@ erase_block:
 	sta b_data1,y           ;ブロックの状態データに格納
 
 flip_yvec:			;ボールのYベクトル値反転
-	lda b_vy
-	eor #$ff
-	clc
-	adc #1
-	sta b_vy
+	lda b_vy		;ボールのYベクトル値をロード
+	eor #$ff		;A XOR $ff(ビット反転)
+	clc			;キャリーフラグクリア
+	adc #1			;A = A + 1(２の補数を取得)
+	sta b_vy		;演算結果をボールYベクトル変数に格納
 	
 next_check:
 	ldy loop_cnt            ;Yレジスタの値をロード
