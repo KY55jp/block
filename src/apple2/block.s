@@ -2,6 +2,7 @@
 ; block.s
 ;
 ; breakout for apple2
+; full 6502 assembly language
 ;
 ; copyright (c) 2023-24 yosi55@email.com
 ;
