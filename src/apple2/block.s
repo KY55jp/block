@@ -994,8 +994,8 @@ draw_check:
 	lda b_data1,y		 ;ブロックの状態を取得
 	and #$40		 ;描写ビットをマスク
 	cmp #$40		 ;描写ビットが立っている？
-	beq :+
-	jmp next_blk_up
+	beq :+			 ;立っていれば
+	jmp next_blk_up		 ;ビットが立っていなければ次のブロックをチェック
 :	
 	lda page		 ;アクティブページを取得
 	cmp #$20
