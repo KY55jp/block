@@ -1,7 +1,7 @@
 DSK = $(NAME).dsk
 
 # For this one, see https://applecommander.github.io/
-AC ?= /srv/ac.jar
+AC ?= ./ac.jar
 
 # Unix or Windows
 ifeq ($(shell echo),)

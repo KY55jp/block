@@ -7,7 +7,6 @@
 プログラムで使用するメモリ領域（特にコードセグメント）に合わせて、apple2.loaderのパラメータを変更する必要がある。
 具体的には次のとおり。2箇所のアドレスをメインプログラムのエントリポイントアドレスに書き換える。
 
-
 対象ファイル:src/apple2.loader/loader.s
 
 
@@ -32,6 +31,11 @@ READ_REF:       .byte   $00             ;REF_NUM
 
 
 上記のjmpで指定されているアドレス
+
+# 起動ディスクのビルド方法
+1. make TARGETS=apple2.loader
+2. make
+3. NAME=block make dsk
 
 # ビットマップ描写アルゴリズム
 
