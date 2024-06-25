@@ -32,7 +32,13 @@ READ_REF:       .byte   $00             ;REF_NUM
 
 上記のjmpで指定されているアドレス
 
-# 起動ディスクのビルド方法
+## 起動ディスクのビルド方法
+
+起動ディスクを作成するためには applecommander が必要
+https://github.com/AppleCommander/AppleCommander/releases
+上記サイトから AppleCommander-ac-1.9.0.jar をダウンロードし
+ac.jarとリネームしてカレントディレクトリに配置する。
+
 1. make TARGETS=apple2.loader
 2. make
 3. NAME=block make dsk
