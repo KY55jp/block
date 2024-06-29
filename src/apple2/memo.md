@@ -32,6 +32,11 @@ READ_REF:       .byte   $00             ;REF_NUM
 
 上記のjmpで指定されているアドレス
 
+## emacsの日本語フォント書体設定
+emacsをデフォルトの設定では日本語フォントの書体が中華系フォントになる。
+修正するためには、.emacsファイルに次の設定を追加する。
+(set-language-environment 'utf-8)
+
 ## 起動ディスクのビルド方法
 
 起動ディスクを作成するためには applecommander が必要
