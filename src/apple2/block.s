@@ -117,12 +117,12 @@ page2_init:
 	jsr draw_leftball	; 残りボール数を画面表示
 	
 	lda #$20		; page1をアクティブに切替
-	sta page
+	sta page                ; page変数に$20(page1)を格納
 	
 page1_init:
 	jsr draw_racket		; ラケットを初期表示
 	jsr draw_ball           ; ボールの初期表示
-	jsr swap_page
+	jsr swap_page           ; ページ切り替え
 	jsr draw_racket		; ラケットを初期表示
 	jsr draw_ball           ; ボールの初期表示
 main_loop:
@@ -173,9 +173,9 @@ draw:
 ;
 ;****************************************
 .proc swap_visible_page
-	lda page
-	cmp #$20
-	bne page2
+	lda page                ; アクティブなページ番号を取得
+	cmp #$20                ; ページ番号が$20?
+	bne page2               ; ページ番号が$20出ない場合は page2へジャンプ
 page1:
 	bit LOWSCR
 	jmp :+
