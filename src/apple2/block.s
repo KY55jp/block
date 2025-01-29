@@ -1220,6 +1220,7 @@ preparation:
 ; 更新する
 ; 壁にあたった場合は、反転する
 ; ラケットとの衝突判定は別ルーチン
+; ブロックとの衝突判定も別ルーチン
 ;****************************************
 .proc move_ball
 	;ボール移動時のウェイト値のチェック
@@ -1720,17 +1721,17 @@ rowH:
 ;テキスト描写データ
 game_title: .asciiz "B L O C K"
 hit_anykey: .asciiz "HIT ANY KEY"
-CP: .asciiz "(C) 2024 YOSI55@EMAIL.COM"
+CP:         .asciiz "(C) 2024 YOSI55@EMAIL.COM"
 
-score: .asciiz "SCORE"
-hi_score: .asciiz "HSCORE"
-left:	.asciiz "LEFT"
-GUIDE1:  .asciiz "A:LEFT"
-GUIDE2:  .asciiz "D:RIGHT"
-GUIDE3:  .asciiz " :STOP"
-GUIDE4:  .asciiz "Q:QUIT"
-szHex:	.asciiz "  "
-game_over: .asciiz "GAME OVER"
+score:      .asciiz "SCORE"
+hi_score:   .asciiz "HSCORE"
+left:	    .asciiz "LEFT"
+GUIDE1:     .asciiz "A:LEFT"
+GUIDE2:     .asciiz "D:RIGHT"
+GUIDE3:     .asciiz " :STOP"
+GUIDE4:     .asciiz "Q:QUIT"
+szHex:	    .asciiz "  "
+game_over:  .asciiz "GAME OVER"
 
 asc_tbl:    ;割る数テーブル(3バイト * 6桁 = 18バイト) リトルエディアン
 	.byte $a0,$86,$01	; 100000 $0186a0
